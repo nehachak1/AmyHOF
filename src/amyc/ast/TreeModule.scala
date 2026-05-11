@@ -60,10 +60,22 @@ trait TreeModule { self =>
   case class Neg(e: Expr) extends Expr
 
   // Function/constructor call
+  // This is still only for names that are known globally, such as `foo(1)` or `List.Cons(1, xs)`
   case class Call(qname: QualifiedName, args: List[Expr]) extends Expr
-  // Function-value call
+
+  // Function-value call, added for higher-order functions
+  // Example: if `f` is a variable containing a function, then `f(10)` becomes Apply(Variable(f), List(10))
+  // Chained calls like `makeAdder(5)(10)` become Apply(Call(makeAdder, List(5)), List(10))
+  // `fun` is an Expr, not a QualifiedName, because the thing being called may be any function value
+  // For example, in `f(10)`, the callee is Variable(f), and in `makeAdder(5)(10)`, the callee is makeAdder(5)
+  // `args` is the list of expressions passed to that function value
+  // This is different from Call above, because Call can only call a globally named function/constructor
   case class Apply(fun: Expr, args: List[Expr]) extends Expr
-  // Anonymous function
+
+  // Anonymous function, added for higher-order functions
+  // Example: `(x: Int(32)) => x + 1`
+  // `params` stores the typed lambda parameters, exactly like normal function parameters
+  // `body` stores the expression after the arrow
   case class Lambda(params: List[ParamDef], body: Expr) extends Expr
   // The ; operator
   case class Sequence(e1: Expr, e2: Expr) extends Expr
@@ -115,6 +127,11 @@ trait TreeModule { self =>
   case class ClassType(qname: QualifiedName) extends Type {
     override def toString: String = printer.printQName(qname)(false).print
   }
+
+  // Function type, added for higher-order functions
+  // Example: `Int(32) => Boolean` is represented as FunctionType(List(IntType), BooleanType)
+  // `args` is a list because a function may take several parameters: `(Int(32), String) => Boolean`
+  // `ret` is the return type after the final arrow
   case class FunctionType(args: List[Type], ret: Type) extends Type
 
   // A wrapper for types that is also a Tree (i.e. has a position)

@@ -24,6 +24,8 @@ object Parser extends Pipeline[Iterator[Token], Program]
   override def getKind(token: Token): TokenKind = TokenKind.of(token)
 
   val eof: Syntax[Token] = elem(EOFKind)
+  // Synthetic token used only by the parser for typed anonymous functions.
+  // See prepareLambdaOpenTokens near the bottom of this file.
   val lambdaOpen: Syntax[Token] = elem(LambdaOpenKind)
   def op(string: String): Syntax[Token] = elem(OperatorKind(string))
   def kw(string: String): Syntax[Token] = elem(KeywordKind(string))
@@ -112,23 +114,42 @@ object Parser extends Pipeline[Iterator[Token], Program]
     case (id, pos) ~ colon ~ type_tree => ParamDef(id, type_tree).setPos(pos)}
 
   // A type expression.
+  // Higher-order functions add function types. The right side is recursive so
+  // `Int(32) => Int(32) => Boolean` is read as `Int(32) => (Int(32) => Boolean)`
   lazy val typeTree: Syntax[TypeTree] = recursive {
+    // Try the parenthesized/multiple-argument function type first.
+    // If that does not fit, try the normal single type, possibly followed by `=>`
     tupleFunctionType | singleFunctionType
   }
 
+  // A normal, non-function type. Function arrows are added around this base parser below
+  // This preserves all old Amy types: Int(32), Boolean, String, Unit, List, OtherModule.TypeName
   lazy val typeAtom: Syntax[TypeTree] = primitiveType | identifierType
 
+  // Multiple-argument function type, for example `(Int(32), String) => Boolean`
   lazy val tupleFunctionType: Syntax[TypeTree] =
+    // Parse the input types inside parentheses.
+    // `repsep(typeTree, ",")` means zero or more typeTree values separated by commas
+    // Then require `=>`, then parse the return type
     ("(" ~>~ repsep(typeTree, ",") ~<~ ")" ~ "=>" ~ typeTree).map {
       case args ~ _ ~ ret =>
+        // Convert the parsed TypeTree inputs into plain Type values for FunctionType
+        // `ret.tpe` is the actual Type inside the return TypeTree wrapper
+        // Position is set to the first argument if there is one, otherwise to the return type
         TypeTree(FunctionType(args.toList.map(_.tpe), ret.tpe)).setPos(args.headOption.getOrElse(ret))
     }
 
+  // Single-argument function type, for example `Int(32) => Boolean`.
+  // If there is no `=>`, this just returns the normal type unchanged
   lazy val singleFunctionType: Syntax[TypeTree] =
+    // First parse a normal type.
+    // Then optionally parse an arrow and a return type
     (typeAtom ~ opt("=>" ~>~ typeTree)).map {
       case arg ~ Some(ret) =>
+        // There was an arrow, so this is a function type with one input
         TypeTree(FunctionType(List(arg.tpe), ret.tpe)).setPos(arg)
       case arg ~ None =>
+        // No arrow means this was just a normal old Amy type
         arg
     }
 
@@ -154,7 +175,7 @@ object Parser extends Pipeline[Iterator[Token], Program]
     case prim ~ None => prim
   }
 
-  // A user-defined type (such as `List`). 
+  // A user-defined type (such as `List`)
   /* Represented as {id}{.}{id} */
   /* or as {id} id as in a type */
   lazy val identifierType: Syntax[TypeTree] = 
@@ -169,6 +190,10 @@ object Parser extends Pipeline[Iterator[Token], Program]
   // EX: val x: Int(32) = 1 + 2; x * 3
   // Let(x, 1 + 2, x * 3)
   lazy val expr: Syntax[Expr] = recursive { // recursive since expressions can contain expressions
+    // Lambdas live at the top expression level. This avoids parsing `(x: T) => x + 1`
+    // as if the lambda were just a small operand inside `+` or `==`
+    // In practice, this means the whole right side after `=>` becomes the lambda body
+    // Example: `(x: Int(32)) => x + 1` becomes Lambda(..., Plus(x, 1)), not Plus(Lambda(...), 1)
     lambdaExpr | valExpr | seqExpr
   }
 
@@ -247,36 +272,70 @@ object Parser extends Pipeline[Iterator[Token], Program]
     }
 
   lazy val simpleExpr: Syntax[Expr] =
+    // Old expression atoms still work exactly as before
     literal.up[Expr] |
+    // Variables and calls are now handled together because calls can be higher-order
     variableOrCall |
     errorExpr |
     parenOrUnitExpr
 
+  // Anonymous function, for example `(x: Int(32)) => x + 1`
+  // The opening parenthesis is `LambdaOpenKind`, not plain `"("`, so this rule does not
+  // conflict with ordinary parentheses or unit patterns such as `case () =>`
   lazy val lambdaExpr: Syntax[Expr] =
+    // Parse the synthetic lambda-opening token, then the same parameter syntax as normal defs
+    // Then parse the closing parenthesis, the arrow, and the lambda body expression
     (lambdaOpen ~ parameters ~ ")" ~ "=>" ~ expr).map {
       case tok ~ params ~ _ ~ _ ~ body =>
+        // Build the new AST node. Position points to the opening parenthesis
         Lambda(params, body).setPos(tok)
     }
 
+  // A reusable parser for `(arg1, arg2, ...)`
+  // It is used by variableOrCall so we can parse repeated argument lists:
+  // `makeAdder(5)(10)` parses as two separate argumentList values
   lazy val argumentList: Syntax[List[Expr]] =
     ("(" ~>~ repsep(expr, ",") ~<~ ")").map(_.toList)
 
+  // Variables and calls both start with an identifier, so this rule handles both
+  // Unqualified calls are first parsed as Apply(Variable(...), args), because after
+  // parsing we do not yet know whether the name is a global function or a function value
+  // NameAnalyzer later rewrites Apply(Variable("foo"), args) to Call(...) when `foo`
+  // is a known function/constructor, and keeps Apply(...) when `foo` is a local value
   lazy val variableOrCall: Syntax[Expr] =
+    // Parse:
+    // 1. the first identifier and its position,
+    // 2. an optional `.name` for qualified calls like `Std.printInt`,
+    // 3. zero or more argument lists, so chained calls are possible
     (identifierPos ~ opt("." ~>~ identifier) ~ many(argumentList)).map {
       case (name, pos) ~ None ~ argLists =>
+        // No module name was written, so this starts as a normal variable
         val base = Variable(name).setPos(pos)
+        // If there are no argument lists, foldLeft returns the variable unchanged
+        // If there is one argument list, this becomes Apply(Variable(name), args)
+        // If there are several, this becomes nested Apply nodes
         argLists.foldLeft(base: Expr) { case (fun, args) =>
+          // `fun` is the expression produced so far
+          // `args` is the next parenthesized argument list
           Apply(fun, args).setPos(fun)
         }
 
       case (mod, pos) ~ Some(name) ~ argLists =>
+        // Qualified names like `Std.printInt` must be global function/constructor calls.
+        // The first argument list is a normal Call; extra argument lists represent
+        // higher-order chained calls, for example `M.makeAdder(5)(10)`.
         argLists.toList match {
           case first :: rest =>
+            // The first call is still a classic named Call, because it is qualified.
             val firstCall = Call(QualifiedName(Some(mod), name), first).setPos(pos)
+            // Any extra argument lists are higher-order calls on the value returned by the first call.
+            // Example: `M.makeAdder(5)(10)`.
             rest.foldLeft(firstCall: Expr) { case (fun, args) =>
               Apply(fun, args).setPos(fun)
             }
           case Nil =>
+            // We reject `Std.printInt` without parentheses, as before.
+            // Amy does not currently treat qualified function names as first-class values in the parser.
             throw new AmycFatalError("Qualified identifier in expression must be a call: " + mod + "." + name)
         }
     }
@@ -388,89 +447,149 @@ object Parser extends Pipeline[Iterator[Token], Program]
 
     val parser = Parser(program)
 
+    // The concrete syntax for lambdas starts with the same character as normal parentheses:
+    // `(x: Int(32)) => x + 1`. Scallion wants the grammar to be LL(1), so it cannot decide
+    // from a plain `(` whether this is a lambda or a parenthesized expression.
+    //
+    // To keep the grammar simple, we do a small parser-side token rewrite:
+    // only a parenthesis that opens a typed parameter list followed by `=>` becomes
+    // LambdaOpenToken. Other parentheses, including `case () =>`, stay unchanged.
     def prepareLambdaOpenTokens(tokens: Iterator[Token]): Iterator[Token] = {
+      // We need random access and lookahead, so convert the iterator to a list.
+      // This is still fine for lab programs because the parser already consumes the whole token stream.
       val ts = tokens.toList
 
+      // Treat LambdaOpenToken like "(" while scanning for the matching ")".
+      // This makes the helper robust if a lambda appears inside another lambda parameter type.
       def isOpen(tok: Token): Boolean = tok match {
+        // A normal open parenthesis increases nesting depth.
         case DelimiterToken("(") | LambdaOpenToken() => true
+        // Any other token is not an opening parenthesis.
         case _ => false
       }
 
+      // Helper for the closing side of the parenthesis matching.
       def isClose(tok: Token): Boolean = tok match {
+        // Only `)` closes the parenthesis group we are scanning.
         case DelimiterToken(")") => true
+        // Everything else is ignored by this helper.
         case _ => false
       }
 
+      // Find the `)` that matches the `(` at index `from`.
+      // We use a small depth counter so nested parentheses do not confuse the scan.
       def matchingClose(from: Int): Option[Int] = {
+        // depth = how many open parentheses are currently unmatched.
         var depth = 0
+        // i = current token index in the scan.
         var i = from
         while (i < ts.size) {
+          // Every open parenthesis starts or enters a nested group.
           if (isOpen(ts(i))) depth += 1
+          // Every close parenthesis exits one group.
           else if (isClose(ts(i))) {
             depth -= 1
+            // When depth returns to zero, this is the matching `)`.
             if (depth == 0) return Some(i)
           }
+          // Move to the next token.
           i += 1
         }
+        // No matching close parenthesis was found.
         None
       }
 
+      // Check whether a slice contains a `:` at the top parenthesis level
+      // We use this to recognize typed lambda parameters like `x: Int(32)`
       def hasTopLevelColon(from: Int, until: Int): Boolean = {
+        // Again, depth tracks nested parentheses inside a type
         var depth = 0
+        // Start scanning just after the parameter name
         var i = from
         while (i < until) {
           ts(i) match {
+            // Nested parentheses may appear inside types, for example Int(32)
             case tok if isOpen(tok) => depth += 1
+            // Leaving a nested parenthesis group
             case tok if isClose(tok) => depth -= 1
+            // A colon at depth zero means this parameter is typed
             case DelimiterToken(":") if depth == 0 => return true
+            // A comma at depth zero means this parameter ended before we saw a colon
             case DelimiterToken(",") if depth == 0 => return false
             case _ =>
           }
           i += 1
         }
+        // No top-level colon was found
         false
       }
 
+      // Decide if the tokens between `from` and `until` look like lambda parameters
+      // This is intentionally simple: every parameter must start with an identifier
+      // and must contain a top-level colon, so `(x: Int(32)) => ...` is accepted
       def looksLikeLambdaParams(from: Int, until: Int): Boolean = {
+        // We only support typed lambda parameters here. This avoids confusing nullary
+        // patterns/constructors like `case Nil() =>` with zero-argument lambdas
         if (from == until) false
         else {
+          // start = index where the current parameter begins
           var start = from
+          // i = current token index.
           var i = from
+          // depth = nested parenthesis depth inside this parameter
           var depth = 0
           while (i <= until) {
+            // We run one extra loop iteration at `until` to validate the final parameter
             val atEnd = i == until
             if (!atEnd) {
               ts(i) match {
+                // Track nested parentheses, for example Int(32) in a type
                 case tok if isOpen(tok) => depth += 1
                 case tok if isClose(tok) => depth -= 1
                 case _ =>
               }
             }
 
+            // A top-level comma ends one parameter
+            // The artificial atEnd case lets us validate the last parameter too
             if (atEnd || (depth == 0 && ts(i) == DelimiterToken(","))) {
+              // A lambda parameter must not be empty.
+              // It must start with an identifier, like `x`
+              // It must contain a top-level colon, like `x: Int(32)`
               if (start >= i || !ts(start).isInstanceOf[IdentifierToken] || !hasTopLevelColon(start + 1, i)) {
                 return false
               }
+              // The next parameter starts after the comma
               start = i + 1
             }
             i += 1
           }
+          // Every parameter slice looked like `name: Type`
           true
         }
       }
 
+      // Check if token i is a normal "(" that should be rewritten to LambdaOpenToken().
       def isLambdaOpenAt(i: Int): Boolean = ts(i) match {
         case DelimiterToken("(") =>
+          // A typed lambda opening must have a matching ")" immediately followed by "=>".
           matchingClose(i).exists { close =>
+            // There must be a token after the close parenthesis.
             close + 1 < ts.size &&
+            // That next token must be the lambda arrow.
             ts(close + 1) == DelimiterToken("=>") &&
+            // The inside of the parentheses must look like typed params.
             looksLikeLambdaParams(i + 1, close)
           }
+        // Any token other than "(" cannot be a lambda opening.
         case _ => false
       }
 
+      // Build the final token stream for Scallion.
       ts.indices.iterator.map { i =>
+        // Rewrite only the chosen `(` token; keep its source position for error messages.
         if (isLambdaOpenAt(i)) LambdaOpenToken().setPos(ts(i))
+        // All other tokens are passed through unchanged.
         else ts(i)
       }
     }

@@ -49,8 +49,13 @@ object NameAnalyzer extends Pipeline[N.Program, (S.Program, SymbolTable)] {
         case N.StringType => S.StringType
         case N.UnitType => S.UnitType
         case N.FunctionType(args, ret) =>
+          // Function types contain other types, so we recursively resolve each part
+          // Example: `Other.T => Int(32)` must resolve `Other.T` to its type symbol
           S.FunctionType(
+            // Resolve each argument type from nominal names into symbolic identifiers
+            // Example: if an argument type is `List`, it becomes the unique symbol for that class
             args.map(tpe => transformType(N.TypeTree(tpe).setPos(tt), inModule)),
+            // Resolve the return type in exactly the same way
             transformType(N.TypeTree(ret).setPos(tt), inModule)
           )
         case N.ClassType(qn@N.QualifiedName(module, name)) =>
@@ -184,40 +189,74 @@ object NameAnalyzer extends Pipeline[N.Program, (S.Program, SymbolTable)] {
               S.Call(sym, args map transformExpr)
           }
         case N.Apply(fun, args) =>
+          // The parser represents an unqualified call `foo(1)` as Apply(Variable("foo"), ...),
+          // because it cannot know whether `foo` is a global function or a function value
+          // Here we have the symbol table and local scopes, so we can decide:
+          // - if `foo` is not a local/parameter and is a known function/constructor, make a Call;
+          // - otherwise keep it as Apply so later phases can treat it as a function value call
           fun match {
             case N.Variable(name) if !locals.contains(name) && !params.contains(name) =>
+              // If the called name is not local, try resolving it as a global constructor or function
+              // Constructors are checked first to match the old Call behavior above
               val entry = table.getConstructor(module, name).orElse(table.getFunction(module, name))
               entry match {
                 case Some((sym, sig)) =>
+                  // A global function/constructor still has a fixed arity
+                  // Example: if `foo` expects one argument, `foo(1, 2)` is rejected here
                   if (sig.argTypes.size != args.size) {
                     fatal(s"Wrong number of arguments for function/constructor $name", expr)
                   }
+                  // We found a global definition, so rewrite Apply(Variable("foo"), args)
+                  // into the older Call node used by type checking/codegen
                   S.Call(sym, args map transformExpr)
                 case None =>
+                  // No global function/constructor exists with this name
+                  // Keep it as Apply; transformExpr(fun) will still report an undefined variable if needed
                   S.Apply(transformExpr(fun), args map transformExpr)
               }
             case _ =>
+              // If `fun` is a local variable, lambda, or another expression, it really is a function-value call
+              // Example: `cond(h)` where `cond` is a function parameter stays as Apply
               S.Apply(transformExpr(fun), args map transformExpr)
           }
         case N.Lambda(lambdaParams, body) =>
+          // Anonymous functions introduce a new parameter scope, similar to normal def params
+          // The body is still allowed to refer to outer params/locals, which is the front-end
+          // part needed for closures. Runtime closure handling belongs to later phases
           lambdaParams.groupBy(_.name).foreach { case (name, ps) =>
             if (ps.size > 1) {
+              // Just like normal function parameters, a lambda cannot bind the same name twice
+              // Example rejected: `(x: Int(32), x: Int(32)) => x`
               fatal(s"Two parameters named $name in anonymous function", ps.tail.head)
             }
           }
 
+          // Fresh symbols make lambda params distinct from outer variables with the same name
           val newParams = lambdaParams.map { case pd@N.ParamDef(name, tt) =>
+            // Shadowing is allowed, but we warn because it can confuse students/readers
+            // Example: `def f(x: Int(32)) := (x: Int(32)) => x end f`
             if (locals.contains(name) || params.contains(name)) {
               warning(s"Lambda parameter $name shadows an existing binding", pd)
             }
+            // Create a unique identifier for this lambda parameter
+            // This is what prevents two different `x` bindings from being confused later
             val sym = Identifier.fresh(name)
+            // Resolve the declared parameter type, including function types
             val tpe = transformType(tt, module)
+            // Rebuild the parameter in the  tree
+            // We copy the original positions so error messages still point to useful locations
             S.ParamDef(sym, S.TypeTree(tpe).setPos(tt)).setPos(pd)
           }
 
+          // Lambda parameters shadow outer locals/params inside the lambda body
+          // The map key is the source name, and the value is the fresh identifier
           val lambdaLocals = lambdaParams.map(_.name).zip(newParams.map(_.name)).toMap
           S.Lambda(
+            // Store the resolved parameters in the  lambda
             newParams,
+            // Analyze the body with the lambda parameters added to the local scope
+            // Outer params/locals remain available, so captured variables like `n` in
+            // `(x: Int(32)) => x + n` resolve correctly
             transformExpr(body)(module, (params, locals ++ lambdaLocals))
           )
         case N.Sequence(e1, e2) =>
