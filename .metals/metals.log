@@ -1,0 +1,11 @@
+2026.05.11 15:45:33 INFO  Started: Metals version 1.6.7 in folders '/Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6' for client Visual Studio Code 1.119.0.[0m
+2026.05.11 15:45:33 INFO  Memory monitor started[0m
+2026.05.11 15:45:34 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.[0m
+May 11, 2026 3:46:04 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+May 11, 2026 3:46:07 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2026.05.11 16:01:41 INFO  Shutting down server[0m
+2026.05.11 16:01:41 INFO  Memory monitor stopped[0m
+2026.05.11 16:01:41 INFO  shutting down Metals[0m
+2026.05.11 16:01:41 INFO  Exiting server[0m

@@ -1,0 +1,6 @@
+object DefNames
+  abstract class Foo
+  case class Bar() extends Foo
+
+  def Foo(): Int(32) := 42 end Foo
+end DefNames

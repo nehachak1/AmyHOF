@@ -1,0 +1,4 @@
+[debug] [scallion-playground-test] Classpath dependencies List()
+[debug] [scallion-playground-test] Dependencies from configurations List(scallion-playground)
+[debug] Bloop wrote the configuration of project 'scallion-playground-test' to '/Users/nehachakraborty/Desktop/clp-lab-5-main/material/scallion-playground/.bloop/scallion-playground-test.json'
+[success] Generated .bloop/scallion-playground-test.json

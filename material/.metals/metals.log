@@ -1,0 +1,165 @@
+2026.05.09 15:24:58 INFO  Started: Metals version 1.6.7 in folders '/Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6, /Users/nehachakraborty/Desktop/clp-lab-5-main/material, /Users/nehachakraborty/Desktop/clp-lab-5-main/project' for client Visual Studio Code 1.119.0.[0m
+2026.05.09 15:24:58 INFO  Memory monitor started[0m
+2026.05.09 15:24:59 INFO  Database: jdbc:h2:file:/Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/.metals/metals (H2 2.4)[0m
+2026.05.09 15:24:59 INFO  Database: jdbc:h2:file:/Users/nehachakraborty/Desktop/clp-lab-5-main/material/.metals/metals (H2 2.4)[0m
+2026.05.09 15:24:59 INFO  Database: jdbc:h2:file:/Users/nehachakraborty/Desktop/clp-lab-5-main/project/.metals/metals (H2 2.4)[0m
+2026.05.09 15:24:59 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.[0m
+2026.05.09 15:24:59 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.[0m
+2026.05.09 15:24:59 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.[0m
+2026.05.09 15:24:59 INFO  Schema history table "PUBLIC"."flyway_schema_history" does not exist yet[0m
+2026.05.09 15:24:59 INFO  Schema history table "PUBLIC"."flyway_schema_history" does not exist yet[0m
+2026.05.09 15:24:59 INFO  Schema history table "PUBLIC"."flyway_schema_history" does not exist yet[0m
+2026.05.09 15:24:59 INFO  Successfully validated 7 migrations (execution time 00:00.038s)[0m
+2026.05.09 15:24:59 INFO  Successfully validated 7 migrations (execution time 00:00.038s)[0m
+2026.05.09 15:24:59 INFO  Successfully validated 7 migrations (execution time 00:00.038s)[0m
+2026.05.09 15:24:59 INFO  Creating Schema History table "PUBLIC"."flyway_schema_history" ...[0m
+2026.05.09 15:24:59 INFO  Creating Schema History table "PUBLIC"."flyway_schema_history" ...[0m
+2026.05.09 15:24:59 INFO  Creating Schema History table "PUBLIC"."flyway_schema_history" ...[0m
+2026.05.09 15:24:59 INFO  Current version of schema "PUBLIC": << Empty Schema >>[0m
+2026.05.09 15:24:59 INFO  Current version of schema "PUBLIC": << Empty Schema >>[0m
+2026.05.09 15:24:59 INFO  Current version of schema "PUBLIC": << Empty Schema >>[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "1 - Create tables"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "1 - Create tables"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "1 - Create tables"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "2 - Server discovery"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "2 - Server discovery"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "2 - Server discovery"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "3 - Jar symbols"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "3 - Jar symbols"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "3 - Jar symbols"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "4 - Fingerprints"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "4 - Fingerprints"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "5 - Jar type hierarchy"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "4 - Fingerprints"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "5 - Jar type hierarchy"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "5 - Jar type hierarchy"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "6 - Delete indices"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "6 - Delete indices"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "6 - Delete indices"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "7 - Toplevel members"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "7 - Toplevel members"[0m
+2026.05.09 15:24:59 INFO  Migrating schema "PUBLIC" to version "7 - Toplevel members"[0m
+2026.05.09 15:24:59 INFO  Successfully applied 7 migrations to schema "PUBLIC", now at version v7 (execution time 00:00.127s)[0m
+2026.05.09 15:24:59 INFO  Successfully applied 7 migrations to schema "PUBLIC", now at version v7 (execution time 00:00.127s)[0m
+2026.05.09 15:24:59 INFO  Successfully applied 7 migrations to schema "PUBLIC", now at version v7 (execution time 00:00.131s)[0m
+2026.05.09 15:25:00 WARN  no build tool detected in workspace '/Users/nehachakraborty/Desktop/clp-lab-5-main/project'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. [0m
+2026.05.09 15:25:00 WARN  Build server is not auto-connectable.[0m
+2026.05.09 15:25:05 INFO  Running List(/Users/nehachakraborty/Library/Application Support/Coursier/bin/scala-cli, setup-ide, /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6)[0m
+2026.05.09 15:25:05 INFO  Attempting to connect to the build server...[0m
+2026.05.09 15:25:05 INFO  Running BSP server List(/Users/nehachakraborty/Library/Application Support/Coursier/bin/.scala-cli.aux, bsp, --json-options, /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/.scala-build/ide-options-v2.json, --json-launcher-options, /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/.scala-build/ide-launcher-options.json, --envs-file, /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/.scala-build/ide-envs.json, /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6)[0m
+2026.05.09 15:25:05 INFO  tracing is disabled for protocol BSP, to enable tracing of incoming and outgoing JSON messages create an empty file at /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/.metals/bsp.trace.json or /Users/nehachakraborty/Library/Caches/org.scalameta.metals/bsp.trace.json[0m
+2026.05.09 15:25:06 INFO  running '/Users/nehachakraborty/Library/Application Support/Coursier/bin/sbt -Dbloop.export-jar-classifiers=sources bloopInstall'[0m
+2026.05.09 15:25:07 INFO  time: Connected to build server in 2.23s[0m
+2026.05.09 15:25:07 INFO  Connected to Build server: scala-cli v1.5.0[0m
+2026.05.09 15:25:07 INFO  time: Imported build in 0.14s[0m
+2026.05.09 15:25:08 INFO  compiling clp-lab-6_f4dd477a3a (22 scala sources)[0m
+2026.05.09 15:25:10 INFO  [info] welcome to sbt 1.10.7 (Eclipse Adoptium Java 21.0.2)[0m
+May 09, 2026 3:25:12 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+May 09, 2026 3:25:14 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+2026.05.09 15:25:17 INFO  [info] loading settings for project scallion-playground-build-build from metals.sbt...[0m
+2026.05.09 15:25:17 INFO  Database: jdbc:h2:file:/Users/nehachakraborty/Library/Application Support/metals/metals (H2 2.4)[0m
+2026.05.09 15:25:17 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.[0m
+2026.05.09 15:25:17 INFO  Successfully validated 1 migration (execution time 00:00.013s)[0m
+2026.05.09 15:25:17 INFO  Current version of schema "PUBLIC": 1[0m
+2026.05.09 15:25:17 INFO  Schema "PUBLIC" is up to date. No migration necessary.[0m
+2026.05.09 15:25:19 INFO  [info] loading project definition from /Users/nehachakraborty/Desktop/clp-lab-5-main/material/scallion-playground/project/project[0m
+2026.05.09 15:25:22 INFO  time: indexed workspace in 14s[0m
+2026.05.09 15:25:24 INFO  [info] loading settings for project scallion-playground-build from metals.sbt...[0m
+2026.05.09 15:25:24 INFO  [info] loading project definition from /Users/nehachakraborty/Desktop/clp-lab-5-main/material/scallion-playground/project[0m
+2026.05.09 15:25:29 INFO  [success] Generated .bloop/scallion-playground-build.json[0m
+2026.05.09 15:25:29 INFO  [success] Total time: 4 s, completed 9 May 2026, 15:25:29[0m
+2026.05.09 15:25:34 INFO  [info] loading settings for project scallion-playground from build.sbt...[0m
+2026.05.09 15:25:34 INFO  time: compiled clp-lab-6_f4dd477a3a in 26s[0m
+2026.05.09 15:25:34 INFO  compiling clp-lab-6_f4dd477a3a (22 scala sources)[0m
+2026.05.09 15:25:34 INFO  [info] set current project to calculator (in build file:/Users/nehachakraborty/Desktop/clp-lab-5-main/material/scallion-playground/)[0m
+2026.05.09 15:25:42 INFO  [success] Generated .bloop/scallion-playground.json[0m
+2026.05.09 15:25:42 INFO  [success] Generated .bloop/scallion-playground-test.json[0m
+2026.05.09 15:25:42 INFO  [success] Total time: 7 s, completed 9 May 2026, 15:25:42[0m
+2026.05.09 15:25:43 INFO  time: ran 'sbt bloopInstall' in 36s[0m
+2026.05.09 15:25:43 INFO  Attempting to connect to the build server...[0m
+2026.05.09 15:25:43 INFO  Found a Bloop server running[0m
+2026.05.09 15:25:43 INFO  tracing is disabled for protocol BSP, to enable tracing of incoming and outgoing JSON messages create an empty file at /Users/nehachakraborty/Desktop/clp-lab-5-main/material/.metals/bsp.trace.json or /Users/nehachakraborty/Library/Caches/org.scalameta.metals/bsp.trace.json[0m
+2026.05.09 15:25:43 INFO  time: Connected to build server in 0.21s[0m
+2026.05.09 15:25:43 INFO  Connected to Build server: Bloop v2.0.19[0m
+2026.05.09 15:25:48 INFO  time: compiled clp-lab-6_f4dd477a3a in 13s[0m
+2026.05.09 15:25:48 INFO  compiling clp-lab-6_f4dd477a3a (22 scala sources)[0m
+2026.05.09 15:25:49 INFO  Database: jdbc:h2:file:/Users/nehachakraborty/Library/Application Support/metals/metals (H2 2.4)[0m
+2026.05.09 15:25:49 WARN  Using H2 2.4.240 which is newer than the version Flyway has been verified with. The latest verified version of H2 is 2.3.232.[0m
+2026.05.09 15:25:49 INFO  Successfully validated 1 migration (execution time 00:00.004s)[0m
+2026.05.09 15:25:49 INFO  Current version of schema "PUBLIC": 1[0m
+2026.05.09 15:25:49 INFO  Schema "PUBLIC" is up to date. No migration necessary.[0m
+2026.05.09 15:25:54 INFO  time: indexed workspace in 11s[0m
+2026.05.09 15:25:54 WARN  no build target for: /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/Main.scala[0m
+2026.05.09 15:25:57 INFO  time: compiled clp-lab-6_f4dd477a3a in 8.16s[0m
+2026.05.09 15:26:32 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:32 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:32 WARN  no build target for: /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala[0m
+2026.05.09 15:26:32 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:32 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:32 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:34 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/ast/Identifier.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:53 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:53 WARN  no build target for: /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala[0m
+2026.05.09 15:26:53 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:53 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:53 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:53 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:54 INFO  time: code lens generation in 1.48s[0m
+2026.05.09 15:26:56 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:57 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Lexer.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:57 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:57 WARN  no build target for: /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala[0m
+2026.05.09 15:26:57 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:58 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:57 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:57 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:26:59 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:27:03 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:28:20 INFO  no build target found for /Users/nehachakraborty/Desktop/clp-lab-5-main/project/plugins.sbt. Using presentation compiler with project's scala-library version: 3.3.7[0m
+2026.05.09 15:28:20 WARN  no build target for: /Users/nehachakraborty/Desktop/clp-lab-5-main/project/plugins.sbt[0m
+2026.05.09 15:28:20 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:28:36 INFO  Cancelling compilation on scala-cli server[0m
+2026.05.09 15:28:36 INFO  no build target found for /Users/nehachakraborty/Desktop/EPFL/BA6/Computer Language Processing/clp-lab-6/src/amyc/parsing/Tokens.scala. Using presentation compiler with project's scala-library version: 3.5.0[0m
+2026.05.09 15:28:36 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:28:38 INFO  Deduplicating compilation of clp-lab-6_f4dd477a3a from bsp client 'scala-cli 1.5.0' (since 3m 31.603s)[0m
+2026.05.09 15:28:38 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:28:39 INFO  compiling scallion-playground (1 scala source)[0m
+2026.05.09 15:28:42 INFO  time: indexed workspace in 6.27s[0m
+2026.05.09 15:28:43 INFO  time: compiled clp-lab-6_f4dd477a3a in 5.43s[0m
+2026.05.09 15:28:43 INFO  Cancelling compilation on scala-cli server[0m
+2026.05.09 15:28:43 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:28:48 INFO  time: indexed workspace in 4.49s[0m
+2026.05.09 15:28:48 INFO  Deduplicating compilation of clp-lab-6_f4dd477a3a from bsp client 'scala-cli 1.5.0' (since 3m 42.401s)[0m
+2026.05.09 15:28:48 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:28:48 INFO  time: compiled clp-lab-6_f4dd477a3a in 0.92s[0m
+2026.05.09 15:28:53 INFO  compiling scallion-playground-test (1 scala source)[0m
+2026.05.09 15:28:53 INFO  time: compiled scallion-playground in 14s[0m
+2026.05.09 15:28:56 INFO  time: compiled scallion-playground-test in 3.12s[0m
+2026.05.09 15:29:11 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:29:14 INFO  time: compiled clp-lab-6_f4dd477a3a in 2.73s[0m
+2026.05.09 15:29:14 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:29:16 INFO  time: compiled clp-lab-6_f4dd477a3a in 2.34s[0m
+May 09, 2026 3:32:22 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+May 09, 2026 3:32:22 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+May 09, 2026 3:32:25 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+May 09, 2026 3:32:26 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFO: Unsupported notification method: $/setTrace
+May 09, 2026 3:34:20 PM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint handleCancellation
+WARNING: Unmatched cancel notification for request id 140
+2026.05.09 15:51:58 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:52:05 INFO  time: compiled clp-lab-6_f4dd477a3a in 7.22s[0m
+2026.05.09 15:52:05 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:52:09 INFO  time: compiled clp-lab-6_f4dd477a3a in 3.77s[0m
+2026.05.09 15:52:09 INFO  compiling clp-lab-6_f4dd477a3a (27 scala sources)[0m
+2026.05.09 15:52:12 INFO  time: compiled clp-lab-6_f4dd477a3a in 2.64s[0m
+2026.05.09 21:44:59 INFO  Shutting down server[0m
+2026.05.09 21:44:59 INFO  Memory monitor stopped[0m
+2026.05.09 21:44:59 INFO  shutting down Metals[0m
+2026.05.09 21:44:59 INFO  Shut down connection with build server.[0m
+2026.05.09 21:44:59 INFO  Shut down connection with build server.[0m
+2026.05.09 21:44:59 INFO  Exiting server[0m
