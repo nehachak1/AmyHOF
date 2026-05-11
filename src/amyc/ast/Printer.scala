@@ -88,6 +88,10 @@ trait Printer {
         "-(" <:> rec(e) <:> ")"
       case Call(name, args) =>
         name <:> "(" <:> Lined(args map (rec(_)), ", ") <:> ")"
+      case Apply(fun, args) =>
+        rec(fun) <:> "(" <:> Lined(args map (rec(_)), ", ") <:> ")"
+      case Lambda(params, body) =>
+        "(" <:> Lined(params map (rec(_)), ", ") <:> ") => " <:> rec(body)
       case Sequence(lhs, rhs) =>
         val main = Stacked(
           rec(lhs, false) <:> ";",
@@ -157,6 +161,11 @@ trait Printer {
           case StringType => "String"
           case UnitType => "Unit"
           case ClassType(name) => name
+          case FunctionType(args, ret) =>
+            val printedArgs =
+              if (args.size == 1) rec(TypeTree(args.head))
+              else "(" <:> Lined(args map (tpe => rec(TypeTree(tpe))), ", ") <:> ")"
+            printedArgs <:> " => " <:> rec(TypeTree(ret))
         }
 
     }
@@ -198,4 +207,3 @@ trait SymbolicPrinter extends Printer {
     printName(name)
   }
 }
-

@@ -24,6 +24,7 @@ object Parser extends Pipeline[Iterator[Token], Program]
   override def getKind(token: Token): TokenKind = TokenKind.of(token)
 
   val eof: Syntax[Token] = elem(EOFKind)
+  val lambdaOpen: Syntax[Token] = elem(LambdaOpenKind)
   def op(string: String): Syntax[Token] = elem(OperatorKind(string))
   def kw(string: String): Syntax[Token] = elem(KeywordKind(string))
 
@@ -111,7 +112,25 @@ object Parser extends Pipeline[Iterator[Token], Program]
     case (id, pos) ~ colon ~ type_tree => ParamDef(id, type_tree).setPos(pos)}
 
   // A type expression.
-  lazy val typeTree: Syntax[TypeTree] = primitiveType | identifierType
+  lazy val typeTree: Syntax[TypeTree] = recursive {
+    tupleFunctionType | singleFunctionType
+  }
+
+  lazy val typeAtom: Syntax[TypeTree] = primitiveType | identifierType
+
+  lazy val tupleFunctionType: Syntax[TypeTree] =
+    ("(" ~>~ repsep(typeTree, ",") ~<~ ")" ~ "=>" ~ typeTree).map {
+      case args ~ _ ~ ret =>
+        TypeTree(FunctionType(args.toList.map(_.tpe), ret.tpe)).setPos(args.headOption.getOrElse(ret))
+    }
+
+  lazy val singleFunctionType: Syntax[TypeTree] =
+    (typeAtom ~ opt("=>" ~>~ typeTree)).map {
+      case arg ~ Some(ret) =>
+        TypeTree(FunctionType(List(arg.tpe), ret.tpe)).setPos(arg)
+      case arg ~ None =>
+        arg
+    }
 
   // A built-in type (such as `Int`).
   val primitiveType: Syntax[TypeTree] = (accept(PrimTypeKind) {
@@ -150,7 +169,7 @@ object Parser extends Pipeline[Iterator[Token], Program]
   // EX: val x: Int(32) = 1 + 2; x * 3
   // Let(x, 1 + 2, x * 3)
   lazy val expr: Syntax[Expr] = recursive { // recursive since expressions can contain expressions
-    valExpr | seqExpr
+    lambdaExpr | valExpr | seqExpr
   }
 
   // A literal expression.
@@ -228,28 +247,38 @@ object Parser extends Pipeline[Iterator[Token], Program]
     }
 
   lazy val simpleExpr: Syntax[Expr] =
-  literal.up[Expr] |
-  variableOrCall |
-  errorExpr |
-  parenOrUnitExpr
+    literal.up[Expr] |
+    variableOrCall |
+    errorExpr |
+    parenOrUnitExpr
 
-  // Because variables and calls both start with an identifierc
-  // input: foo turns into ("foo", position)c
+  lazy val lambdaExpr: Syntax[Expr] =
+    (lambdaOpen ~ parameters ~ ")" ~ "=>" ~ expr).map {
+      case tok ~ params ~ _ ~ _ ~ body =>
+        Lambda(params, body).setPos(tok)
+    }
+
+  lazy val argumentList: Syntax[List[Expr]] =
+    ("(" ~>~ repsep(expr, ",") ~<~ ")").map(_.toList)
+
   lazy val variableOrCall: Syntax[Expr] =
-                          // ~>: parse the left side ("."), throw away its value, keep the right side (identifier)
-                                                        // optionally read argument list in parentheses, but parse (throw out) the parantheses
-    (identifierPos ~ opt("." ~>~ identifier) ~ opt("(" ~>~ repsep(expr, ",") ~<~ ")")).map {
-      case (name, pos) ~ None ~ None => // x
-        Variable(name).setPos(pos)
+    (identifierPos ~ opt("." ~>~ identifier) ~ many(argumentList)).map {
+      case (name, pos) ~ None ~ argLists =>
+        val base = Variable(name).setPos(pos)
+        argLists.foldLeft(base: Expr) { case (fun, args) =>
+          Apply(fun, args).setPos(fun)
+        }
 
-      case (name, pos) ~ None ~ Some(args) => // f(a, b)
-        Call(QualifiedName(None, name), args.toList).setPos(pos)
-
-      case (mod, pos) ~ Some(name) ~ Some(args) => // Std.printInt(x)
-        Call(QualifiedName(Some(mod), name), args.toList).setPos(pos)
-
-      case (mod, _) ~ Some(name) ~ None => // Std.printInt - rejected since not being treated as a variable without the (x)
-        throw new AmycFatalError("Qualified identifier in expression must be a call: " + mod + "." + name)
+      case (mod, pos) ~ Some(name) ~ argLists =>
+        argLists.toList match {
+          case first :: rest =>
+            val firstCall = Call(QualifiedName(Some(mod), name), first).setPos(pos)
+            rest.foldLeft(firstCall: Expr) { case (fun, args) =>
+              Apply(fun, args).setPos(fun)
+            }
+          case Nil =>
+            throw new AmycFatalError("Qualified identifier in expression must be a call: " + mod + "." + name)
+        }
     }
 
   lazy val errorExpr: Syntax[Expr] =
@@ -297,16 +326,15 @@ object Parser extends Pipeline[Iterator[Token], Program]
         Let(df, value, body).setPos(tok)
     }
 
-  // TODO: Other definitions.
-  // Feel free to decompose the rules in whatever way convenient.
+  // Binary operators, grouped from highest to lowest precedence.
   lazy val binaryExpr: Syntax[Expr] = operators(unaryExpr)(
     // precendence levels
-    (op("*") | op("/") | op("%")) is LeftAssociative,
-    op("+") | op("-") | op("++") is LeftAssociative,
-    op("<") | op("<=") is LeftAssociative,
-    op("==") is LeftAssociative,
-    op("&&") is LeftAssociative,
-    op("||") is LeftAssociative) 
+    (op("*") | op("/") | op("%")).is(LeftAssociative),
+    (op("+") | op("-") | op("++")).is(LeftAssociative),
+    (op("<") | op("<=")).is(LeftAssociative),
+    op("==").is(LeftAssociative),
+    op("&&").is(LeftAssociative),
+    op("||").is(LeftAssociative))
     {
     // once Scallion decides which operator it found, one must say which AST node to build
     case (lhs, tok, rhs) => tok match {
@@ -324,6 +352,7 @@ object Parser extends Pipeline[Iterator[Token], Program]
 
       case OperatorToken("&&") => And(lhs, rhs).setPos(lhs)
       case OperatorToken("||") => Or(lhs, rhs).setPos(lhs)
+      case other => throw new AmycFatalError(s"Unexpected binary operator token: $other")
     }
   }
 
@@ -359,8 +388,95 @@ object Parser extends Pipeline[Iterator[Token], Program]
 
     val parser = Parser(program)
 
+    def prepareLambdaOpenTokens(tokens: Iterator[Token]): Iterator[Token] = {
+      val ts = tokens.toList
+
+      def isOpen(tok: Token): Boolean = tok match {
+        case DelimiterToken("(") | LambdaOpenToken() => true
+        case _ => false
+      }
+
+      def isClose(tok: Token): Boolean = tok match {
+        case DelimiterToken(")") => true
+        case _ => false
+      }
+
+      def matchingClose(from: Int): Option[Int] = {
+        var depth = 0
+        var i = from
+        while (i < ts.size) {
+          if (isOpen(ts(i))) depth += 1
+          else if (isClose(ts(i))) {
+            depth -= 1
+            if (depth == 0) return Some(i)
+          }
+          i += 1
+        }
+        None
+      }
+
+      def hasTopLevelColon(from: Int, until: Int): Boolean = {
+        var depth = 0
+        var i = from
+        while (i < until) {
+          ts(i) match {
+            case tok if isOpen(tok) => depth += 1
+            case tok if isClose(tok) => depth -= 1
+            case DelimiterToken(":") if depth == 0 => return true
+            case DelimiterToken(",") if depth == 0 => return false
+            case _ =>
+          }
+          i += 1
+        }
+        false
+      }
+
+      def looksLikeLambdaParams(from: Int, until: Int): Boolean = {
+        if (from == until) false
+        else {
+          var start = from
+          var i = from
+          var depth = 0
+          while (i <= until) {
+            val atEnd = i == until
+            if (!atEnd) {
+              ts(i) match {
+                case tok if isOpen(tok) => depth += 1
+                case tok if isClose(tok) => depth -= 1
+                case _ =>
+              }
+            }
+
+            if (atEnd || (depth == 0 && ts(i) == DelimiterToken(","))) {
+              if (start >= i || !ts(start).isInstanceOf[IdentifierToken] || !hasTopLevelColon(start + 1, i)) {
+                return false
+              }
+              start = i + 1
+            }
+            i += 1
+          }
+          true
+        }
+      }
+
+      def isLambdaOpenAt(i: Int): Boolean = ts(i) match {
+        case DelimiterToken("(") =>
+          matchingClose(i).exists { close =>
+            close + 1 < ts.size &&
+            ts(close + 1) == DelimiterToken("=>") &&
+            looksLikeLambdaParams(i + 1, close)
+          }
+        case _ => false
+      }
+
+      ts.indices.iterator.map { i =>
+        if (isLambdaOpenAt(i)) LambdaOpenToken().setPos(ts(i))
+        else ts(i)
+      }
+    }
+
     try {
-      parser(tokens) match {
+      parser(prepareLambdaOpenTokens(tokens)) match {
         case Parsed(result, rest) => result
         case UnexpectedEnd(rest) => fatal("Unexpected end of input.")
         case UnexpectedToken(token, rest) => fatal("Unexpected token: " + token + ", possible kinds: " + rest.first.map(_.toString).mkString(", "))

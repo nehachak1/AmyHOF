@@ -48,6 +48,11 @@ object NameAnalyzer extends Pipeline[N.Program, (S.Program, SymbolTable)] {
         case N.BooleanType => S.BooleanType
         case N.StringType => S.StringType
         case N.UnitType => S.UnitType
+        case N.FunctionType(args, ret) =>
+          S.FunctionType(
+            args.map(tpe => transformType(N.TypeTree(tpe).setPos(tt), inModule)),
+            transformType(N.TypeTree(ret).setPos(tt), inModule)
+          )
         case N.ClassType(qn@N.QualifiedName(module, name)) =>
           table.getType(module getOrElse inModule, name) match {
             case Some(symbol) =>
@@ -178,6 +183,43 @@ object NameAnalyzer extends Pipeline[N.Program, (S.Program, SymbolTable)] {
               }
               S.Call(sym, args map transformExpr)
           }
+        case N.Apply(fun, args) =>
+          fun match {
+            case N.Variable(name) if !locals.contains(name) && !params.contains(name) =>
+              val entry = table.getConstructor(module, name).orElse(table.getFunction(module, name))
+              entry match {
+                case Some((sym, sig)) =>
+                  if (sig.argTypes.size != args.size) {
+                    fatal(s"Wrong number of arguments for function/constructor $name", expr)
+                  }
+                  S.Call(sym, args map transformExpr)
+                case None =>
+                  S.Apply(transformExpr(fun), args map transformExpr)
+              }
+            case _ =>
+              S.Apply(transformExpr(fun), args map transformExpr)
+          }
+        case N.Lambda(lambdaParams, body) =>
+          lambdaParams.groupBy(_.name).foreach { case (name, ps) =>
+            if (ps.size > 1) {
+              fatal(s"Two parameters named $name in anonymous function", ps.tail.head)
+            }
+          }
+
+          val newParams = lambdaParams.map { case pd@N.ParamDef(name, tt) =>
+            if (locals.contains(name) || params.contains(name)) {
+              warning(s"Lambda parameter $name shadows an existing binding", pd)
+            }
+            val sym = Identifier.fresh(name)
+            val tpe = transformType(tt, module)
+            S.ParamDef(sym, S.TypeTree(tpe).setPos(tt)).setPos(pd)
+          }
+
+          val lambdaLocals = lambdaParams.map(_.name).zip(newParams.map(_.name)).toMap
+          S.Lambda(
+            newParams,
+            transformExpr(body)(module, (params, locals ++ lambdaLocals))
+          )
         case N.Sequence(e1, e2) =>
           S.Sequence(transformExpr(e1), transformExpr(e2))
         case N.Let(vd, value, body) =>

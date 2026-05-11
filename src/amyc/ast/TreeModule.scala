@@ -61,6 +61,10 @@ trait TreeModule { self =>
 
   // Function/constructor call
   case class Call(qname: QualifiedName, args: List[Expr]) extends Expr
+  // Function-value call
+  case class Apply(fun: Expr, args: List[Expr]) extends Expr
+  // Anonymous function
+  case class Lambda(params: List[ParamDef], body: Expr) extends Expr
   // The ; operator
   case class Sequence(e1: Expr, e2: Expr) extends Expr
   // Local variable definition
@@ -111,6 +115,7 @@ trait TreeModule { self =>
   case class ClassType(qname: QualifiedName) extends Type {
     override def toString: String = printer.printQName(qname)(false).print
   }
+  case class FunctionType(args: List[Type], ret: Type) extends Type
 
   // A wrapper for types that is also a Tree (i.e. has a position)
   case class TypeTree(tpe: Type) extends Tree
@@ -139,4 +144,3 @@ object SymbolicTreeModule extends TreeModule {
   type QualifiedName = Identifier
   val printer = SymbolicPrinter
 }
-

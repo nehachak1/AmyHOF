@@ -21,6 +21,7 @@ object Tokens {
   final case class CommentToken(text: String) extends Token     // e.g. "// this is a comment"
   final case class SpaceToken() extends Token                   // e.g. "\n  "
   final case class ErrorToken(content: String) extends Token
+  final case class LambdaOpenToken() extends Token                // parser-only token for lambda-starting "("
   final case class EOFToken() extends Token                     // special token at the end of file
 }
 
@@ -35,6 +36,7 @@ object TokenKinds {
   case object LiteralKind extends TokenKind("<Literal>")
   final case class DelimiterKind(value: String) extends TokenKind(value)
   final case class OperatorKind(value: String) extends TokenKind(value)
+  case object LambdaOpenKind extends TokenKind("<Lambda Open>")
   case object EOFKind extends TokenKind("<EOF>")
   case object NoKind extends TokenKind("<???>")
 }
@@ -52,6 +54,7 @@ object TokenKind {
     case StringLitToken(_) => LiteralKind
     case DelimiterToken(value) => DelimiterKind(value)
     case OperatorToken(value) => OperatorKind(value)
+    case LambdaOpenToken() => LambdaOpenKind
     case EOFToken() => EOFKind
     case _ => NoKind
   }

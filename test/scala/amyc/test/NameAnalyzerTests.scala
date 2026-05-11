@@ -47,6 +47,7 @@ class NameAnalyzerTests extends TestSuite {
   @Test def testRecursive = shouldOutput("Recursive")
   @Test def testList = shouldOutput(List("List", "Std", "Option"), "List")
   @Test def matchShadowParameter = shouldOutput("MatchShadowParameter")
+  @Test def testHigherOrderFrontEnd = shouldOutput("HigherOrderFrontEnd")
 
   @Test def testArgumentNumberFunction = shouldFail("ArgumentNumberFunction")
   @Test def testArgumentNumberConstructor = shouldFail("ArgumentNumberConstructor")

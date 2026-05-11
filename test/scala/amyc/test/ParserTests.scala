@@ -61,6 +61,7 @@ class ParserTests extends TestSuite {
   @Test def testIfCondition = shouldOutput("IfCondition")
   @Test def testMatchScrutinee = shouldOutput("MatchScrutinee")
   @Test def testChainedMatch = shouldOutput("ChainedMatch")
+  @Test def testHigherOrderFrontEnd = shouldOutput("HigherOrderFrontEnd")
 
   @Test def testArgsError1 = shouldFail("ArgsError1")
   @Test def testArgsError2 = shouldFail("ArgsError2")

@@ -1,0 +1,7 @@
+object HigherOrderFrontEnd
+  def makeAdder(n: Int(32)): Int(32) => Int(32) :=
+    (x: Int(32)) => (x + n)
+  end makeAdder
+  makeAdder(5)(10)
+end HigherOrderFrontEnd
+
