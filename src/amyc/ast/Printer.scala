@@ -89,8 +89,19 @@ trait Printer {
       case Call(name, args) =>
         name <:> "(" <:> Lined(args map (rec(_)), ", ") <:> ")"
       case Apply(fun, args) =>
+        // Higher-order call: print the function expression first, then the argument list
+        // This keeps examples such as `makeAdder(5)(10)` readable after parsing/name analysis
+        // `rec(fun)` prints the expression that evaluates to a function
+        // For `makeAdder(5)(10)`, `rec(fun)` prints `makeAdder(5)`
+        // Then we print one more argument list, which gives the final `(10)`
+        // `Lined(args map (rec(_)), ", ")` means "print every argument and separate them with commas"
         rec(fun) <:> "(" <:> Lined(args map (rec(_)), ", ") <:> ")"
       case Lambda(params, body) =>
+        // Anonymous function syntax introduced for higher-order functions
+        // We print the parameters between parentheses, then `=>`, then the body
+        // This mirrors the syntax accepted by the parser: `(x: Int(32)) => x + 1`
+        // Each parameter is printed using the existing ParamDef printer case below
+        // The body uses `rec(body)`, so nested expressions still get printed normally
         "(" <:> Lined(params map (rec(_)), ", ") <:> ") => " <:> rec(body)
       case Sequence(lhs, rhs) =>
         val main = Stacked(
@@ -110,7 +121,7 @@ trait Printer {
         val main = Stacked(
           "val " <:> rec(df) <:> " =",
           Indented(rec(value)) <:> ";",
-          rec(body, false) // For demonstration purposes, the scope or df is indented
+          rec(body, false) // For demonstration purposes, the scope or df is indented (what does this even mean??)
         )
         if (parens) {
           Stacked(
@@ -162,9 +173,17 @@ trait Printer {
           case UnitType => "Unit"
           case ClassType(name) => name
           case FunctionType(args, ret) =>
+            // Function types are printed in the same syntax the parser accepts
+            // Single argument: `Int(32) => Boolean`; multiple arguments: `(Int(32), String) => Boolean`
+            // We special-case one argument only to avoid unnecessary parentheses
+            // This makes the common type `Int(32) => Int(32)` look like the proposal
+            // For 2+ arguments, parentheses are required so the reader knows all those types are inputs
             val printedArgs =
+              // One input type: print just that type, e.g. `Int(32)`
               if (args.size == 1) rec(TypeTree(args.head))
+              // Several input types: print `(A, B, C)`
               else "(" <:> Lined(args map (tpe => rec(TypeTree(tpe))), ", ") <:> ")"
+            // Finally print the arrow and the return type
             printedArgs <:> " => " <:> rec(TypeTree(ret))
         }
 
