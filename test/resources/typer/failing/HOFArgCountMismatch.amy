@@ -1,0 +1,4 @@
+object HOFArgCountMismatch
+  val f: (Int(32), Int(32)) => Int(32) = (x: Int(32), y: Int(32)) => x + y;
+  val res: Int(32) = f(5) // Error: expected 2 args, got 1
+end HOFArgCountMismatch

@@ -1,0 +1,8 @@
+object HOFHighOrder
+  def getMultiplier(factor: Int(32)): (Int(32)) => Int(32) :=
+    (x: Int(32)) => x * factor
+  end getMultiplier
+
+  val f: (Int(32)) => Int(32) = getMultiplier(2); 
+  f(10) 
+end HOFHighOrder

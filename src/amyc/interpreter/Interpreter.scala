@@ -31,6 +31,9 @@ object Interpreter extends Pipeline[(Program, SymbolTable), Unit] {
   case object UnitValue extends Value
   case class CaseClassValue(constructor: Identifier, args: List[Value]) extends Value
 
+  /* Lab 6 : New Function Value + store the locals*/
+  case class FunctionValue(params: List[Identifier], body: Expr, locals: Map[Identifier, Value]) extends Value
+
           // context: for error reporting and options
           // program: AST of whole program
           // symbol table: symbol table containing type/function/constructor info
@@ -209,6 +212,34 @@ object Interpreter extends Pipeline[(Program, SymbolTable), Unit] {
             case _ =>
               ctx.reporter.fatal(s"Match error: ${evS.toString}@${scrut.position}")
           }
+
+      /* Lab 6 : New Lambda and Apply */
+
+      /* For lambda we store the parameter names and the expression of the body */
+      case Lambda(params, body) => FunctionValue(params.map(p => p.name), body,locals)
+
+      /* For Apply */
+
+      case Apply(fun, args) =>
+        //Step 1 : Evalute the function expression to get the FunctionValue and 
+        //check if we are getting a FunctionValue and not another value
+        val funValue = interpret(fun)match {
+          case funct: FunctionValue => funct //if we get a function Value then we return that
+          case _ => ctx.reporter.fatal(s"Error: the type isn't a FunctionValue, we go instead : $fun") //else we abort program code - show what we got instead
+        }
+
+        //Step 3: Evaluate the each argument
+        val interpArgs = args.map(arg => interpret(arg))
+
+        //Step 4: Verify that the number of parameters in funValue is the same as the number of arguments in args
+        if(funValue.params.size != interpArgs.size){
+          ctx.reporter.fatal(s"Error: different number of arguments : fun -> ${funValue.params.size} arguments vs args -> ${interpArgs.size} arguments ")
+        }
+
+        //Step 5: Evaluate the body of fun and interpret 
+        val newLocals: Map[Identifier, Value] = funValue.locals ++ funValue.params.zip(interpArgs).toMap
+        interpret(funValue.body)(using newLocals)
+
       case Error(msg) => 
         // evaluate message expression
         val m = interpret(msg).asString

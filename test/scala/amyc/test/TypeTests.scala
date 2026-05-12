@@ -77,4 +77,33 @@ class TyperTests extends TestSuite {
   @Test def testLetWithError = shouldPass("LetWithError")
   @Test def testError = shouldPass("Error")
 
+
+  /* New tests for the updated type chcker for HOF */
+
+  /* HOF Error Tests */
+
+  //Test checks that the type of the lambda body matches the declared return type of the function
+  @Test def testHOFTypeMismatch = shouldFail("HOFTypeMismatch")
+
+  //Test checks that the return type of the function matchs the return type of the body
+  @Test def testHOFStringArith = shouldFail("HOFStringArith")
+
+  //Tests that the fun part of an Apply(fun, args) is a function
+  @Test def testValueAsFunction = shouldFail("HOFValueAsFunction")
+
+  //Tests that the number of arguments provided in an Apply is the same asthe number of parameters in the FunctionType
+  @Test def testArgCountMismatch = shouldFail("HOFArgCountMismatch")
+
+  //Tests that
+  @Test def testFuncParamMismatch = shouldFail("HOFFuncParamMismatch")
+
+  /* HOF Success Tests */
+
+  //Checks simple lambda 
+  @Test def testHOFSimple = shouldPass("HOFSimple")
+  //CHecks HOF 
+  @Test def testHOFHighOrder = shouldPass("HOFHighOrder")
+  //Checks identity
+  @Test def testHOFIdentity= shouldPass("HOFIdentity")
+
 }

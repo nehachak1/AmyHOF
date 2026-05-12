@@ -150,6 +150,55 @@ object TypeChecker extends Pipeline[(Program, SymbolTable), (Program, SymbolTabl
                   Nil
               }
           }
+        
+        /* Lab 6 : New Lambda and Apply */
+        /* In genConstraints we want to check the return type of the body and parameters */
+        /* case class Lambda(params: List[ParamDef], body: Expr) so we know the type of the parameters */
+        /* We want to get the type of the parameters attached to them  */
+        /* The body/expression of the FunctionType is a lambda => */
+        case Lambda(params, body)=>
+          //Step 1: get the list of parameters from the lambda expression
+          val parameter_types = params.map(_.tt.tpe)
+
+          //Step 2: Extend the environment with the mapping between the parameters names to their types
+          val lambda_env = params.map{p => p.name -> p.tt.tpe}.toMap
+
+          //Step 3: Create a fresh variable to store the return type of the body/expression (of lambda)
+          val tv = TypeVariable.fresh()
+
+          //Step 4: Check the body by generating constraint son the body (of lambda)
+          //We want to match the return type of the lambda with the return type of the body
+          genConstraints(body,tv)(using env ++ lambda_env) ++ topLevelConstraint(FunctionType(parameter_types,tv)) //get the constraints of the body
+
+          //Step 5: helper returns a list of a single constraint recording the type of function, 
+          //links lambda and the return type of the functoin
+          
+
+        //Apply(fun: Expr, args: List[Expr])
+        /* This is the function application, we want to check that the types of the function application are correct */
+        /* We must check that the fun of apply matches function type that takes args as arguments and both return the same type */
+        case Apply(fun, args) =>
+
+          //Step 1: Create a fresh variable to store the return type of fun
+          val funTv = TypeVariable.fresh()
+
+          //Step 2: Create a fresh variable for each arg to store the return type of each of them
+          val argsTv = args.map(_ => TypeVariable.fresh())
+
+          //Step 3: Generate constraints to check that the expression fun matches FunctionTYpe(args)
+          //the return args when used in FunctionType
+
+          val funArgsGenConstr = genConstraints(fun, FunctionType(argsTv, funTv))
+
+          //Step 4: Generate constraints to check the return type between args and the return type of args
+          // pair ups the args and return type of args and generate cosntraints between the pairs
+          val argsGenConstr = args.zip(argsTv).flatMap { case (arg, retArg) => genConstraints(arg,retArg) }
+
+          //Step 5: return the generated constraints 
+          funArgsGenConstr ++ 
+          argsGenConstr ++  
+          topLevelConstraint(funTv) 
+
 
         case Error(msg) => 
           genConstraints(msg, StringType) ++
@@ -219,6 +268,11 @@ object TypeChecker extends Pipeline[(Program, SymbolTable), (Program, SymbolTabl
     def subst(tpe: Type, from: Int, to: Type): Type = {
       tpe match {
         case TypeVariable(`from`) => to
+        /* Lab 6 : New Lambda and Apply */
+        //we check that the argument and return type match the variable being replaced
+        case FunctionType(args, ret) => 
+          FunctionType(args.map(arg => subst(arg,from,to)), subst(ret, from, to))
+          //call subst for each argument
         case other => other
       }
     }
@@ -230,15 +284,6 @@ object TypeChecker extends Pipeline[(Program, SymbolTable), (Program, SymbolTabl
       constraints match {
         case Nil => ()
         case Constraint(found, expected, pos) :: more =>
-          // HINT: You can use the `subst_*` helper above to replace a type variable
-          //       by another type in your current set of constraints.
-            // TODO clea
-          //go through each constraint type of the list of constraints so recursive function
-          //get 3 possibilities :
-            // - match : same types
-            // - substitution : different types but that matcj like Int and IntLiteral, replace all T with its type
-                  // asignment x = 1 so x becomes an Int so substitute x with Int
-            // - failure : different types
           /* 3 types :
             * base type : Int, Bool, String
             * proper name : List, Option
@@ -249,9 +294,6 @@ object TypeChecker extends Pipeline[(Program, SymbolTable), (Program, SymbolTabl
           (found, expected) match {
 
             //matches
-            /**case (Int, Int) => solveConstraints(more)
-            case (Boolean, Boolean) => solveConstraints(more)
-            case (String, String) => solveConstraints(more)*/
             case (type1, type2) if (type1 == type2) => 
               solveConstraints(more)
 
@@ -262,6 +304,29 @@ object TypeChecker extends Pipeline[(Program, SymbolTable), (Program, SymbolTabl
             case (type_v1, TypeVariable(type_v2)) => 
               solveConstraints(subst_*(more, type_v2, type_v1)) //recrusively call on rest
             
+            /* Lab 6 : New Lambda and Apply */
+            //add case for functionType
+            /*in constraint if we get 2 function types we want to check that the arguments match eachother, 
+              same for return type*/
+            case (FunctionType(args1,ret1),FunctionType(args2,ret2)) =>
+              //Step 1: Check if we have same number of arguments in the found and expected functions
+
+              if(args1.size != args2.size){ //throw error if different number of arguments
+                ctx.reporter.error(s"Both function types do not match, they have a different number of arguments : found -> ${args1.size} arguments, expect -> ${args2.size} arguments");
+              }
+
+              else{
+                //Step 2: Create constraints between each pair of arguments from found and expect to check that they match via constraint
+                val constraintsArgs = args1.zip(args2).map{case(arg1,arg2) => Constraint(arg1,arg2,pos)}
+
+                //Step 3: Create constraint between the found return type and the exepcted return type
+                val constraintRet = Constraint(ret1,ret2,pos)
+
+                //Step 3: Solve the constraints of the arguments and return types
+                solveConstraints(constraintsArgs ++ (constraintRet::more)) //and then more for the remaining constraints that need solving
+              }
+
+
             //failure such as 2 different types or different class types
             /* Do not end the execution as soon as an error occurs! Instead, 
           collect all the errors and report them at the end of the type checking phase.*/

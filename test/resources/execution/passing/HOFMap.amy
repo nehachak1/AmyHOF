@@ -1,0 +1,20 @@
+object HOFMap
+
+  def map(f: Int(32) => Int(32), l: L.List): L.List := 
+    l match {
+        case L.Nil() => L.Nil()
+        case L.Cons(h,t) => L.Cons(f(h), map(f,t))
+    }
+  end map
+
+
+  val list: L.List = L.Cons(1, L.Cons(2, L.Cons(3, L.Nil())));
+  
+  val result2: L.List = map((x: Int(32)) => x + 1, list);
+
+  result2 match {
+    case L.Cons(h, t) => Std.printInt(h)
+    case L.Nil() => Std.printString("Error")
+  }
+
+end HOFMap

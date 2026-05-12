@@ -1,0 +1,10 @@
+object HOFSimple
+  def math(f: (Int(32), Int(32)) => Int(32), a: Int(32), b: Int(32)): Int(32) :=
+    f(a, b)
+  end math
+
+  def main(): Int(32) :=
+    val res: Int(32) = math((x: Int(32), y: Int(32)) => x + y, 5, 5);
+    res
+  end main
+end HOFSimple

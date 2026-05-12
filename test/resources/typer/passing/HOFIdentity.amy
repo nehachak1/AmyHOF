@@ -1,0 +1,10 @@
+object HOFIdentity
+  def getId(): (Int(32)) => Int(32) :=
+    (x: Int(32)) => x
+  end getId
+
+  def main(): Unit :=
+    getId()(42);
+    ()
+  end main
+end HOFIdentity

@@ -1,0 +1,28 @@
+object HOF
+  
+  def compose(f: Int(32) => Int(32), g: Int(32) => Int(32)): Int(32) => Int(32) :=
+    (x: Int(32)) => f(g(x))
+  end compose
+
+  def map(f: Int(32) => Int(32), l: L.List): L.List := 
+    l match {
+        case L.Nil() => L.Nil()
+        case L.Cons(h,t) => L.Cons(f(h), map(f,t))
+    }
+  end map
+
+  // We pass anonymous lambdas directly. 
+  // This avoids the "Variable not found" error and perfectly tests your TypeChecker!
+  val result: Int(32) = compose((x: Int(32)) => x + 1, (y: Int(32)) => y * 2)(5);
+  Std.printInt(result);
+
+  val list: L.List = L.Cons(1, L.Cons(2, L.Cons(3, L.Nil())));
+  
+  val result2: L.List = map((x: Int(32)) => x + 1, list);
+
+  result2 match {
+    case L.Cons(h, t) => Std.printInt(h)
+    case L.Nil() => Std.printString("Error")
+  }
+
+end HOF

@@ -1,0 +1,15 @@
+object HOFFold
+
+    /*Test for HOF trying with foldLeft*/
+  def foldLeft(l: L.List, acc: Int(32), f: (Int(32), Int(32)) => Int(32)): Int(32) :=
+    l match {
+      case L.Nil() => acc
+      case L.Cons(h, t) => foldLeft(t, f(acc, h), f)
+    }
+  end foldLeft
+
+  val l: L.List = L.Cons(1, L.Cons(2, L.Cons(3, L.Nil())));
+  
+  // Should compute ((0 + 1) + 2) + 3 = 6
+  Std.printInt(foldLeft(l, 0, (a: Int(32), b: Int(32)) => a + b))
+end HOFFold
