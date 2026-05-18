@@ -8,6 +8,7 @@ import amyc.utils.*
 import amyc.wasm.Module
 
 import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Paths}
 import scala.collection.JavaConverters.*
 import scala.sys.process.*
 
@@ -22,7 +23,12 @@ class CodegenTests extends ExecutionTests {
       val input = Console.in.lines.iterator().asScala.toList.mkString("\n")
       val inputS = new ByteArrayInputStream(input.getBytes("UTF-8"))
 
-      val binary = {
+      def onPath(command: String): Boolean =
+        sys.env.get("PATH").exists(_.split(java.io.File.pathSeparator).exists { dir =>
+          Files.isExecutable(Paths.get(dir, command))
+        })
+
+      val bundledBinary = {
         import Env._
         os match {
           case Linux => "./bin/linux/wasmtime"
@@ -30,6 +36,8 @@ class CodegenTests extends ExecutionTests {
           case Mac => "./bin/macos/wasmtime"
         }
       }
+      val pathBinary = if (Env.os == Env.Windows) "wasmtime.exe" else "wasmtime"
+      val binary = if (onPath(pathBinary)) pathBinary else bundledBinary
 
       val exitCode = s"$binary wasmout/$fileName" #< inputS ! ProcessLogger(Console.out.println, Console.err.println)
       if (exitCode != 0) {
