@@ -52,6 +52,33 @@ object CodeGen extends Pipeline[(Program, SymbolTable), Module] {
       }
     }
 
+    // Compute free variables of an expression given a set of bound variable names
+    // Returns the set of Identifiers that are free
+    def freeVars(expr: Expr, bound: Set[Identifier]): Set[Identifier] = expr match {
+      case Variable(n) => if (bound(n)) Set.empty else Set(n)
+      case Lambda(ps, b) => freeVars(b, bound ++ ps.map(_.name))
+      case Let(df, v, b) => freeVars(v, bound) ++ freeVars(b, bound + df.name)
+      case Apply(f, as) => freeVars(f, bound) ++ as.flatMap(freeVars(_, bound))
+      case AmyCall(_, as) => as.flatMap(freeVars(_, bound)).toSet
+      case Plus(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case Minus(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case Times(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case AmyDiv(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case Mod(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case LessThan(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case LessEquals(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case AmyAnd(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case AmyOr(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case Equals(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case Concat(l, r) => freeVars(l, bound) ++ freeVars(r, bound)
+      case Not(e) => freeVars(e, bound)
+      case Neg(e) => freeVars(e, bound)
+      case Sequence(e1, e2) => freeVars(e1, bound) ++ freeVars(e2, bound)
+      case Ite(c, t, e) => freeVars(c, bound) ++ freeVars(t, bound) ++ freeVars(e, bound)
+      case Match(s, cases) => freeVars(s, bound) ++ cases.flatMap(c => freeVars(c.expr, bound))
+      case Error(e) => freeVars(e, bound)
+      case _ => Set.empty
+    }
 
     // Generate code for an expression expr.
     // Additional arguments are a mapping from identifiers (parameters and variables) to
@@ -191,47 +218,121 @@ object CodeGen extends Pipeline[(Program, SymbolTable), Module] {
         case Error(msg) =>
           Comment(expr.toString) <:> cgExpr(msg) <:> Unreachable
 
-        // Lambda: lift to a top-level wasm function, return its integer ID.
-        // Only closed lambdas are supported (no closure conversion).
-        case Lambda(params, body) =>
-          val lamName = "lambda_" + Identifier.fresh("lam").name
-          val lamId = lambdaRegistry.size
+        /* 
+        Lambda: with closure conversion
 
+        A closure is represented in memory as two words: [lamId, envPtr]
+        envPtr points to a flat array of captured variable values: [v0, v1, ...]
+        
+        The lifted wasm function takes (envPtr, arg0, ..., argN) as parameters.
+        At the start it loads each captured variable from envPtr into a local.
+        */
+        case Lambda(params, body) =>
+          // Compute captured variables: free vars in body that exist in current locals
+          val captured: List[Identifier] =
+            freeVars(body, params.map(_.name).toSet)
+              .filter(locals.contains)
+              .toList
+              .sortBy(_.name) // stable order
+
+          val lamName = "lambda_" + Identifier.fresh("lam").fullName
+          val lamId = lambdaRegistry.size
           lambdaRegistry += ((lamName, params.size))
-          liftedLambdas += Function(lamName, params.size, false) { lamLh =>
-            val lamLocals = params.map(_.name).zipWithIndex.toMap
-            cgExpr(body)(using lamLocals, lamLh)
+ 
+          // Lifted function: (envPtr, arg0, ..., argN) -> i32
+          // local 0 = envPtr, locals 1..n = lambda params
+          liftedLambdas += Function(lamName, 1 + params.size, false) { lamLh =>
+            // Load each captured var from envPtr into a fresh local
+            val (capturedLocals, loadCaptures) =
+              captured.zipWithIndex.foldLeft((Map.empty[Identifier, Int], Code(Nil): Code)) {
+                case ((accMap, accCode), (id, i)) =>
+                  val local = lamLh.getFreshLocal()
+                  val load  = GetLocal(0) <:> Const(i * 4) <:> Add <:> Load <:> SetLocal(local)
+                  (accMap + (id -> local), accCode <:> load)
+              }
+            // Lambda params start at local index 1
+            val paramLocals: Map[Identifier, Int] =
+              params.map(_.name).zipWithIndex.map { case (id, i) => id -> (i + 1) }.toMap
+ 
+            loadCaptures <:> cgExpr(body)(using capturedLocals ++ paramLocals, lamLh)
           }
 
-          Comment(s"Lambda id=$lamId") <:> Const(lamId)
+          // At the call site: allocate env, store captured values, allocate closure
+          val envPtrLocal     = lh.getFreshLocal()
+          val closurePtrLocal = lh.getFreshLocal()
+ 
+          // Allocate env: captured.size * 4 bytes (or 0 if no captures)
+          val allocEnv: Code =
+            if (captured.isEmpty) Const(0) <:> SetLocal(envPtrLocal)
+            else
+              GetGlobal(memoryBoundary) <:> SetLocal(envPtrLocal) <:>
+              GetGlobal(memoryBoundary) <:> Const(captured.size * 4) <:> Add <:> SetGlobal(memoryBoundary) <:>
+              captured.zipWithIndex.foldLeft(Code(Nil): Code) { case (acc, (id, i)) =>
+                acc <:>
+                GetLocal(envPtrLocal) <:> Const(i * 4) <:> Add <:>
+                GetLocal(locals(id)) <:>
+                Store
+              }
+ 
+          // Allocate closure: 8 bytes = [lamId (4 bytes), envPtr (4 bytes)]
+          val allocClosure: Code =
+            GetGlobal(memoryBoundary) <:> SetLocal(closurePtrLocal) <:>
+            GetGlobal(memoryBoundary) <:> Const(8) <:> Add <:> SetGlobal(memoryBoundary) <:>
+            GetLocal(closurePtrLocal) <:> Const(lamId) <:> Store <:>
+            GetLocal(closurePtrLocal) <:> Const(4) <:> Add <:> GetLocal(envPtrLocal) <:> Store
+ 
+          Comment(s"Lambda id=$lamId captures=${captured.map(_.name)}") <:>
+            allocEnv <:> allocClosure <:> GetLocal(closurePtrLocal)
 
-        // Apply: evaluate fun to get a lambda ID, dispatch via fun_dispatch_<arity>.
+        /* 
+        Apply: call a closure
+        
+        The closure pointer is [lamId, envPtr].
+        We load lamId and envPtr, then call the dispatcher:
+        fun_dispatch_<arity>(lamId, envPtr, arg0, ..., argN)
+        */
         case Apply(fun, args) =>
-          val arity = args.size
-          val idLocal = lh.getFreshLocal()
-
-          cgExpr(fun) <:> SetLocal(idLocal) <:>
-          GetLocal(idLocal) <:>
-          args.foldLeft(Code(Nil): Code)((acc, a) => acc <:> cgExpr(a)) <:>
-          Call(s"fun_dispatch_$arity")
-        }
+          val arity          = args.size
+          val closureLocal   = lh.getFreshLocal()
+          val lamIdLocal     = lh.getFreshLocal()
+          val envPtrLocal    = lh.getFreshLocal()
+ 
+          // Evaluate fun to get closure pointer
+          val evalFun   = cgExpr(fun) <:> SetLocal(closureLocal)
+          // Load lamId and envPtr from closure
+          val loadId    = GetLocal(closureLocal) <:> Load <:> SetLocal(lamIdLocal)
+          val loadEnv   = GetLocal(closureLocal) <:> Const(4) <:> Add <:> Load <:> SetLocal(envPtrLocal)
+          // Evaluate args
+          val evalArgs  = args.foldLeft(Code(Nil): Code)((acc, a) => acc <:> cgExpr(a))
+ 
+          Comment(s"Apply arity=$arity") <:>
+            evalFun <:> loadId <:> loadEnv <:>
+            GetLocal(lamIdLocal) <:>
+            GetLocal(envPtrLocal) <:>
+            evalArgs <:>
+            Call(s"fun_dispatch_$arity")
+      }
     }
 
-    // Build one dispatcher per distinct arity after all code is generated:
-    // fun_dispatch_<arity>(lambdaId, arg0, ..., argN): i32
+    // Build one dispatcher per distinct arity:
+    //   fun_dispatch_<arity>(lamId, envPtr, arg0, ..., argN): i32
     // chains if/else to call the right lifted lambda by ID.
+    // Each lifted lambda has signature: (envPtr, arg0, ..., argN) -> i32
     def buildDispatchers(): List[Function] = {
       lambdaRegistry.toList
         .zipWithIndex
         .groupBy(_._1._2) // group by arity
         .map { case (arity, entries) =>
-          Function(s"fun_dispatch_$arity", 1 + arity, false) { _ =>
+          // params: local0=lamId, local1=envPtr, local2..=args
+          Function(s"fun_dispatch_$arity", 2 + arity, false) { _ =>
             def chain(remaining: List[(Int, String)]): Code = remaining match {
               case Nil => Unreachable
               case (id, name) :: rest =>
+                // if lamId == id: call lambda(envPtr, arg0, ..., argN)
                 GetLocal(0) <:> Const(id) <:> Eq <:>
                 If_i32 <:>
-                  (1 to arity).foldLeft(Code(Nil): Code)((acc, i) => acc <:> GetLocal(i)) <:>
+                  GetLocal(1) <:> // envPtr
+                  (2 to 1 + arity).foldLeft(Code(Nil): Code)((acc, i) => acc <:> GetLocal(i)) <:>
                   Call(name) <:>
                 Else <:>
                   chain(rest) <:>
@@ -241,7 +342,7 @@ object CodeGen extends Pipeline[(Program, SymbolTable), Module] {
           }
         }.toList
     }
- 
+
     val programFunctions = program.modules flatMap cgModule
     val dispatchers = buildDispatchers()
 
