@@ -20,7 +20,6 @@ Interpreter:
 WebAssembly code generation:
 
 - `src/amyc/codegen/CodeGen.scala`
-- `test/scala/amyc/test/CodegenTests.scala`
 
 Tests and examples:
 
