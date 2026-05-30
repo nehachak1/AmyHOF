@@ -1,110 +1,253 @@
-# CLP Lab 6 - Higher-Order Functions for Amy
+# Functional Amy: Higher-Order Functions for the Amy Language
 
-This project extends the Amy compiler with higher-order functions. Functions can be passed as arguments, returned from other functions, stored in variables, and written as anonymous functions.
+A compiler extension project for the Amy programming language that introduces first-class and higher-order functions. The project extends the complete compiler pipeline, including parsing, semantic analysis, interpretation, and WebAssembly code generation.
 
-## Modified or Added Files
+## Overview
 
-Front end:
+Amy originally supported only top-level function definitions. Functions could not be passed as arguments, returned from other functions, stored in variables, or written anonymously.
 
-- `src/amyc/ast/TreeModule.scala`
-- `src/amyc/ast/Printer.scala`
-- `src/amyc/parsing/Tokens.scala`
-- `src/amyc/parsing/Parser.scala`
-- `src/amyc/analyzer/NameAnalyzer.scala`
-- `src/amyc/analyzer/TypeChecker.scala`
+This project extends Amy with:
 
-Interpreter:
+- Function types
+- Lambda expressions
+- Higher-order functions
+- Closures and lexical scoping
+- Function-value application
+- Type checking for function values
+- Interpreter support
+- WebAssembly backend support
 
-- `src/amyc/interpreter/Interpreter.scala`
+The result is a fully functional higher-order programming model that works both in the interpreter and in generated WebAssembly.
 
-WebAssembly code generation:
+---
 
-- `src/amyc/codegen/CodeGen.scala`
+## Features
 
-Tests and examples:
+### First-Class Functions
 
-- `test/resources/parser/passing/HigherOrderFrontEnd.amy`
-- `test/resources/parser/outputs/HigherOrderFrontEnd.amy`
-- `test/resources/nameAnalyzer/passing/HigherOrderFrontEnd.amy`
-- `test/resources/nameAnalyzer/outputs/HigherOrderFrontEnd.scala`
-- `test/resources/typer/passing/HOFIdentity.amy`
-- `test/resources/typer/passing/HOFHighOrder.amy`
-- `test/resources/typer/passing/HOFSimple.amy`
-- `test/resources/typer/failing/HOF*.amy`
-- `test/resources/execution/passing/HOFCompose.amy`
-- `test/resources/execution/passing/HOFMap.amy`
-- `test/resources/execution/passing/HOFFold.amy`
-- `test/resources/execution/outputs/HOFCompose.txt`
-- `test/resources/execution/outputs/HOFMap.txt`
-- `test/resources/execution/outputs/HOFFold.txt`
-- `test/scala/amyc/test/ParserTests.scala`
-- `test/scala/amyc/test/NameAnalyzerTests.scala`
-- `test/scala/amyc/test/TypeTests.scala`
-- `test/scala/amyc/test/InterpreterTests.scala`
-- `test/scala/amyc/test/ExecutionTests.scala`
+Functions can now:
 
-## Running the Compiler
+- Be stored in variables
+- Be passed as arguments
+- Be returned from functions
+- Be created anonymously
 
-The scripts are intended for macOS/Linux shells. On Windows, run them from WSL/Git Bash, or call the same `sbt` commands directly.
+Example:
 
-Interpret an Amy program:
+```amy
+def makeAdder(n: Int(32)): Int(32) => Int(32) :=
+  (x: Int(32)) => x + n
+end makeAdder
 
-```bash
-./amyi.sh path/to/program.amy
+makeAdder(5)(10)
 ```
 
-Compile an Amy program to WebAssembly:
+---
 
-```bash
-./amyc.sh path/to/program.amy
+### Anonymous Functions (Lambdas)
+
+```amy
+(x: Int(32)) => x + 1
 ```
 
-Type-check an Amy program:
+Lambdas can be used wherever function values are expected.
 
-```bash
-./amytc.sh path/to/program.amy
+---
+
+### Higher-Order Functions
+
+```amy
+def map(f: Int(32) => Int(32), l: List): List := ...
 ```
 
-## Running Tests
+Supports common functional programming patterns such as:
 
-Prerequisites:
+- map
+- fold
+- compose
+- custom higher-order abstractions
 
-- Java runtime/JDK. Java 21 was used for testing.
-- `sbt`
-- `wasmtime` for WebAssembly execution tests
+---
 
-Run the full test suite:
+### Closures
 
-```bash
-sbt test
+Captured variables remain available even after their defining scope exits.
+
+```amy
+def getMultiplier(factor: Int(32)): Int(32) => Int(32) :=
+  (x: Int(32)) => x * factor
+end getMultiplier
 ```
 
-Run only code generation tests:
+---
 
-```bash
-sbt "testOnly amyc.test.CodegenTests"
+## Compiler Extensions
+
+### Front End
+
+Added new AST nodes:
+
+```scala
+Lambda(params, body)
+
+Apply(fun, args)
+
+FunctionType(args, ret)
 ```
 
-## Wasmtime Note
+Implemented:
 
-The repository includes wasmtime binaries under `bin/linux`, `bin/macos`, and `bin/windows`. The code generation tests first use `wasmtime` from `PATH` when available, then fall back to the bundled binary for the current OS.
+- Lambda parsing
+- Function type parsing
+- Name analysis for function values
+- Function application analysis
+- Type inference and constraint generation
 
-If code generation tests fail because wasmtime cannot run, install wasmtime locally and make sure it is visible on `PATH`:
+---
 
-```bash
-wasmtime --version
+### Type Checker
+
+Extended type checking to support:
+
+- Function type compatibility
+- Lambda inference
+- Structural function type matching
+- Recursive constraint solving
+
+Example:
+
+```scala
+(Int => Int)
 ```
 
-For example, on macOS:
+is treated as a first-class type.
 
-```bash
-brew install wasmtime
+---
+
+### Interpreter
+
+Added runtime closure support through:
+
+```scala
+FunctionValue(
+  params,
+  body,
+  locals
+)
 ```
 
-## Expected Result
+Features:
 
-The full test suite should pass:
+- Lexical scoping
+- Environment capture
+- Dynamic function application
+
+---
+
+### WebAssembly Backend
+
+Implemented closure conversion:
+
+- Environment capture
+- Closure allocation
+- Function lifting
+- Indirect function calls
+- Runtime closure dispatch
+
+This allows higher-order functions to execute correctly in generated WebAssembly code.
+
+---
+
+## Example Programs
+
+### Returning Functions
+
+```amy
+def makeAdder(n: Int(32)): Int(32) => Int(32) :=
+  (x: Int(32)) => x + n
+end makeAdder
+
+makeAdder(5)(10)
+```
+
+### Function Variables
+
+```amy
+val double = getMultiplier(2)
+
+double(10)
+```
+
+### Map
+
+```amy
+map((x: Int(32)) => x + 1, list)
+```
+
+---
+
+## Architecture
 
 ```text
-Passed: Total 224, Failed 0, Errors 0, Passed 224
+Amy Source Code
+        │
+        ▼
+      Lexer
+        │
+        ▼
+      Parser
+        │
+        ▼
+ Name Analysis
+        │
+        ▼
+ Type Checker
+        │
+        ▼
+ ┌──────────────┬──────────────┐
+ │              │              │
+ ▼              ▼              ▼
+Interpreter   Closure      WebAssembly
+              Conversion     Backend
 ```
+
+---
+
+## Key Concepts
+
+- Compiler Construction
+- Programming Language Design
+- Functional Programming
+- Higher-Order Functions
+- Type Systems
+- Lambda Calculus
+- Closure Conversion
+- Semantic Analysis
+- WebAssembly
+- Runtime Systems
+
+---
+
+## Technologies
+
+- Scala
+- Amy Compiler Framework
+- WebAssembly (WASM)
+- Functional Programming Concepts
+- Compiler Design
+
+---
+
+## Authors
+
+- Neha Chakraborty
+- Cléa Maisonnier
+- Martin Zimmer
+
+---
+
+## Academic Context
+
+Developed as part of the **Computer Language Processing (CS-320) Extension Lab** at EPFL.
+
+The project extends the Amy language with modern functional programming capabilities while preserving correctness across parsing, type checking, interpretation, and code generation.
